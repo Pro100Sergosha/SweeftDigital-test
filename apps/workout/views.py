@@ -67,6 +67,9 @@ class WeightLogViewSet(viewsets.ModelViewSet):
     serializer_class = WeightLogSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    def get_queryset(self):
+        return WeightLog.objects.filter(user=self.request.user)
+
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
