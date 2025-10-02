@@ -1,0 +1,70 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: workout_postgres_dev
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=workout_db_dev
+      - POSTGRES_USER=workout_dev
+      - POSTGRES_PASSWORD=workout_dev_password
+    ports:
+      - "5433:5432" 
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U workout_dev -d workout_db_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: workout_api_dev
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/app  
+      - /app/__pycache__  
+      - /app/.pytest_cache  
+    ports:
+      - "8000:8000"
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.dev
+      - DEBUG=True
+      - SECRET_KEY=django-insecure-dev-key-not-for-production-123456789
+      - DATABASE_ENGINE=django.db.backends.postgresql
+      - DATABASE_NAME=workout_db_dev
+      - DATABASE_USER=workout_dev
+      - DATABASE_PASSWORD=workout_dev_password
+      - DATABASE_HOST=db
+      - DATABASE_PORT=5432
+      - DJANGO_SUPERUSER_USERNAME=admin
+      - DJANGO_SUPERUSER_EMAIL=admin@dev.com
+      - DJANGO_SUPERUSER_PASSWORD=admin123
+    depends_on:
+      db:
+        condition: service_healthy
+    stdin_open: true  
+    tty: true  
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: workout_pgadmin_dev
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@dev.com
+      - PGADMIN_DEFAULT_PASSWORD=admin123
+      - PGADMIN_CONFIG_SERVER_MODE=False
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - db
+
+  
+
+volumes:
+  postgres_data_dev:
+  pgadmin_data:
